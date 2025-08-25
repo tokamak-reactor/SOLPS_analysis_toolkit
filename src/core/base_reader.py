@@ -162,3 +162,41 @@ class B2fReadMixin:
         Соответствует MATLAB: int64 → np.int64
         """
         return self._read_field(fieldname, np.int64, dims)
+
+class FileBasedReaderMixin:
+    """Миксин для читателей, работающих с файловыми объектами."""
+
+    def __init__(self):
+        self._file_obj = None
+        self._file_path = None
+
+    def open(self, file_path: Path) -> 'FileBasedReaderMixin':
+        """Открывает файл для чтения."""
+        if self._file_obj is not None:
+            self.close()
+
+        self._file_path = file_path
+        self._file_obj = open(file_path, 'r')
+        return self
+
+    def close(self) -> None:
+        """Закрывает файл."""
+        if self._file_obj is not None:
+            self._file_obj.close()
+            self._file_obj = None
+            self._file_path = None
+
+    def __enter__(self) -> 'FileBasedReaderMixin':
+        """Поддержка контекстного менеджера."""
+        if self._file_obj is None and self._file_path is not None:
+            self.open(self._file_path)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Гарантированное закрытие файла при выходе из контекста."""
+        self.close()
+
+    @property
+    def is_open(self) -> bool:
+        """Проверка, открыт ли файл."""
+        return self._file_obj is not None
